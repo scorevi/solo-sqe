@@ -150,6 +150,11 @@ export default function AdminPage() {
       return
     }
     
+    // Set default tab based on role
+    if (user?.role === 'TEACHER') {
+      setActiveTab('bookings')
+    }
+    
     fetchData()
   }, [user, token, fetchData])
 
@@ -483,9 +488,13 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {user?.role === 'ADMIN' ? 'Admin Dashboard' : 'Teacher Dashboard'}
+            </h1>
             <p className="mt-2 text-gray-600">
-              Manage users, labs, and bookings
+              {user?.role === 'ADMIN' 
+                ? 'Manage users, labs, and bookings' 
+                : 'Manage lab booking requests'}
             </p>
           </div>
 
@@ -515,10 +524,12 @@ export default function AdminPage() {
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-8">
               {[
-                { id: 'overview', label: 'Overview', icon: BarChart3 },
+                ...(user?.role === 'ADMIN' ? [{ id: 'overview', label: 'Overview', icon: BarChart3 }] : []),
                 { id: 'bookings', label: 'Bookings', icon: Calendar },
-                { id: 'users', label: 'Users', icon: Users },
-                { id: 'labs', label: 'Labs', icon: Computer },
+                ...(user?.role === 'ADMIN' ? [
+                  { id: 'users', label: 'Users', icon: Users },
+                  { id: 'labs', label: 'Labs', icon: Computer },
+                ] : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -536,8 +547,8 @@ export default function AdminPage() {
             </nav>
           </div>
 
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {/* Overview Tab - Admin Only */}
+          {activeTab === 'overview' && user?.role === 'ADMIN' && (
             <div className="space-y-6">
               {stats && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -649,8 +660,8 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Users Tab */}
-          {activeTab === 'users' && (
+          {/* Users Tab - Admin Only */}
+          {activeTab === 'users' && user?.role === 'ADMIN' && (
             <div className="bg-white shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">System Users</h3>
@@ -723,8 +734,8 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Labs Tab */}
-          {activeTab === 'labs' && (
+          {/* Labs Tab - Admin Only */}
+          {activeTab === 'labs' && user?.role === 'ADMIN' && (
             <div className="bg-white shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Computer Labs</h3>

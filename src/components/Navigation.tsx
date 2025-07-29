@@ -64,7 +64,7 @@ export const Navigation = () => {
                 className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 <Settings className="h-4 w-4" />
-                <span>Admin</span>
+                <span>{user.role === 'ADMIN' ? 'Admin' : 'Manage'}</span>
               </Link>
             )}
 
