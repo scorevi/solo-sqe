@@ -72,17 +72,38 @@ export default function BookPage() {
     }
   }, [token, preselectedLabId])
 
-  // Set default times (next hour to 2 hours from now)
+  // Set default times (next hour to 2 hours from now) in GMT+8 timezone
   useEffect(() => {
+    // Create date in GMT+8 timezone
     const now = new Date()
-    const nextHour = new Date(now)
-    nextHour.setHours(now.getHours() + 1, 0, 0, 0)
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000)
+    const gmt8Time = new Date(utcTime + (8 * 3600000)) // GMT+8
+    
+    const nextHour = new Date(gmt8Time)
+    nextHour.setHours(gmt8Time.getHours() + 1, 0, 0, 0)
     
     const endHour = new Date(nextHour)
     endHour.setHours(nextHour.getHours() + 1)
 
-    setStartTime(nextHour.toISOString().slice(0, 16))
-    setEndTime(endHour.toISOString().slice(0, 16))
+    // Format as YYYY-MM-DDTHH:MM for datetime-local (local time format)
+    const formatForDatetimeLocal = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${year}-${month}-${day}T${hours}:${minutes}`
+    }
+    
+    const startTimeString = formatForDatetimeLocal(nextHour)
+    const endTimeString = formatForDatetimeLocal(endHour)
+    
+    console.log('Setting start time (GMT+8):', startTimeString)
+    console.log('Setting end time (GMT+8):', endTimeString)
+    console.log('Current GMT+8 time:', formatForDatetimeLocal(gmt8Time))
+    
+    setStartTime(startTimeString)
+    setEndTime(endTimeString)
   }, [])
 
   const handleLabSelect = async (labId: string) => {
@@ -110,6 +131,16 @@ export default function BookPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    console.log('Form submission values:', {
+      selectedLab: selectedLab?.name,
+      selectedComputer,
+      startTime,
+      endTime,
+      startTimeAsDate: new Date(startTime),
+      endTimeAsDate: new Date(endTime)
+    })
+    
     setError('')
     setSuccess('')
     setIsSubmitting(true)
@@ -126,18 +157,40 @@ export default function BookPage() {
       return
     }
 
-    if (new Date(startTime) < new Date()) {
+    // Check if booking is in the past (using GMT+8 timezone for comparison)
+    const now = new Date()
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000)
+    const gmt8Now = new Date(utcTime + (8 * 3600000))
+    const selectedStartTime = new Date(startTime)
+    
+    if (selectedStartTime < gmt8Now) {
       setError('Cannot book in the past')
       setIsSubmitting(false)
       return
     }
 
     try {
+      // Convert datetime-local values to proper Date objects for GMT+8
+      const convertToGMT8ISO = (datetimeLocal: string) => {
+        const localDate = new Date(datetimeLocal)
+        // The datetime-local input gives us local time, but we want to treat it as GMT+8
+        // So we create a new date with the same values but explicitly in GMT+8
+        const year = localDate.getFullYear()
+        const month = localDate.getMonth()
+        const day = localDate.getDate()
+        const hours = localDate.getHours()
+        const minutes = localDate.getMinutes()
+        
+        // Create date in UTC, then adjust for GMT+8 offset
+        const utcDate = new Date(Date.UTC(year, month, day, hours - 8, minutes))
+        return utcDate.toISOString()
+      }
+      
       const bookingData = {
         labId: selectedLab.id,
         computerId: selectedComputer || undefined,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        startTime: convertToGMT8ISO(startTime),
+        endTime: convertToGMT8ISO(endTime),
         purpose: purpose || undefined,
       }
 
@@ -324,9 +377,13 @@ export default function BookPage() {
                   <input
                     type="datetime-local"
                     id="startTime"
+                    name="startTime"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium min-w-0"
+                    style={{ minWidth: '250px', fontSize: '14px' }}
+                    step="60"
+                    placeholder="YYYY-MM-DDTHH:MM"
                     required
                   />
                 </div>
@@ -338,9 +395,13 @@ export default function BookPage() {
                   <input
                     type="datetime-local"
                     id="endTime"
+                    name="endTime"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium min-w-0"
+                    style={{ minWidth: '250px', fontSize: '14px' }}
+                    step="60"
+                    placeholder="YYYY-MM-DDTHH:MM"
                     required
                   />
                 </div>

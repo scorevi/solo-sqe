@@ -30,52 +30,51 @@ input[type="datetime-local"] {
   color: #1f2937 !important; /* text-gray-800 */
   background-color: #ffffff !important;
   font-weight: 500;
+  min-width: 250px;
+  width: 100%;
 }
 
 input[type="datetime-local"]::-webkit-datetime-edit {
   color: #1f2937 !important;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  padding: 2px;
 }
 
 input[type="datetime-local"]::-webkit-datetime-edit-text {
   color: #1f2937 !important;
   font-weight: 500;
+  padding: 0 2px;
 }
 
-input[type="datetime-local"]::-webkit-datetime-edit-month-field {
-  color: #1f2937 !important;
-  font-weight: 500;
-}
-
-input[type="datetime-local"]::-webkit-datetime-edit-day-field {
-  color: #1f2937 !important;
-  font-weight: 500;
-}
-
-input[type="datetime-local"]::-webkit-datetime-edit-year-field {
-  color: #1f2937 !important;
-  font-weight: 500;
-}
-
-input[type="datetime-local"]::-webkit-datetime-edit-hour-field {
-  color: #1f2937 !important;
-  font-weight: 500;
-}
-
+input[type="datetime-local"]::-webkit-datetime-edit-month-field,
+input[type="datetime-local"]::-webkit-datetime-edit-day-field,
+input[type="datetime-local"]::-webkit-datetime-edit-year-field,
+input[type="datetime-local"]::-webkit-datetime-edit-hour-field,
 input[type="datetime-local"]::-webkit-datetime-edit-minute-field {
   color: #1f2937 !important;
   font-weight: 500;
+  padding: 1px 2px;
+  background: transparent;
+  border: none;
+  min-width: auto;
 }
 
 input[type="datetime-local"]::-webkit-datetime-edit-ampm-field {
   color: #1f2937 !important;
   font-weight: 500;
+  padding: 1px 2px;
+  background: transparent;
+  border: none;
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   color: #1f2937;
   opacity: 1;
   filter: contrast(1.2);
+  cursor: pointer;
+  margin-left: 4px;
 }
 
 /* Firefox specific styling */
