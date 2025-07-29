@@ -188,11 +188,13 @@ export default function BookPage() {
       
       const bookingData = {
         labId: selectedLab.id,
-        computerId: selectedComputer || undefined,
+        computerId: selectedComputer && selectedComputer.trim() !== '' ? selectedComputer : undefined,
         startTime: convertToGMT8ISO(startTime),
         endTime: convertToGMT8ISO(endTime),
-        purpose: purpose || undefined,
+        purpose: purpose && purpose.trim() !== '' ? purpose : undefined,
       }
+
+      console.log('Submitting booking data:', bookingData)
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
@@ -223,6 +225,43 @@ export default function BookPage() {
 
   if (!user) {
     return null
+  }
+
+  // Only students can make bookings
+  if (user.role !== 'STUDENT') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+
+        <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">Access Restricted</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Only students can make lab reservations.
+                </p>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600">
+                    {user.role === 'TEACHER' && 'As a teacher, you can manage booking approvals from the admin dashboard.'}
+                    {user.role === 'ADMIN' && 'As an administrator, you can manage all bookings and system settings from the admin dashboard.'}
+                  </p>
+                </div>
+                <div className="mt-6">
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

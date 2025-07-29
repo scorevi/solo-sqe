@@ -48,10 +48,10 @@ export const registerSchema = z.object({
 
 export const bookingSchema = z.object({
   labId: z.string().min(1, 'Lab ID is required'),
-  computerId: z.string().optional(),
+  computerId: z.string().optional().transform(val => val === '' ? undefined : val),
   startTime: z.string().datetime('Invalid start time'),
   endTime: z.string().datetime('Invalid end time'),
-  purpose: z.string().optional(),
+  purpose: z.string().optional().transform(val => val === '' ? undefined : val),
 })
 
 export const labSchema = z.object({

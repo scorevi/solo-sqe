@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
@@ -12,7 +13,8 @@ import {
   AlertCircle, 
   CheckCircle, 
   X,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react'
 
 interface Booking {
@@ -33,10 +35,14 @@ interface Booking {
 
 export default function BookingsPage() {
   const { user, token } = useAuth()
+  const router = useRouter()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null)
+
+  // Force refresh - updated on 2025-07-29
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -115,25 +121,41 @@ export default function BookingsPage() {
     const now = new Date()
     const startTime = new Date(booking.startTime)
     const isUpcoming = startTime > now
-    const isPendingOrApproved = ['PENDING', 'APPROVED'].includes(booking.status)
-    return isUpcoming && isPendingOrApproved
+    const isPending = booking.status === 'PENDING'
+    return isUpcoming && isPending
   }
 
   const handleCancelBooking = async (bookingId: string) => {
+    console.log('Cancel button clicked for booking ID:', bookingId)
+    console.log('Current token:', token ? 'Token exists' : 'No token')
+    
+    if (!token) {
+      setError('Please log in to cancel bookings')
+      return
+    }
+    
     if (!confirm('Are you sure you want to cancel this booking?')) {
       return
     }
 
+    setCancellingBookingId(bookingId)
+
     try {
+      console.log('Making DELETE request to:', `/api/bookings/${bookingId}`)
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+
       if (response.ok) {
-        await response.json()
+        const result = await response.json()
+        console.log('Cancel success:', result)
         setSuccess('Booking cancelled successfully')
         // Refresh bookings
         setBookings(prev => prev.map(booking => 
@@ -143,9 +165,11 @@ export default function BookingsPage() {
         ))
         setTimeout(() => setSuccess(''), 5000)
       } else {
+        console.log('Cancel failed with status:', response.status)
         let errorMessage = 'Failed to cancel booking'
         try {
           const errorData = await response.json()
+          console.log('Error response:', errorData)
           errorMessage = errorData.error || errorMessage
         } catch (parseError) {
           // If we can't parse JSON, it might be an HTML error page
@@ -154,6 +178,8 @@ export default function BookingsPage() {
             errorMessage = 'Booking not found or already cancelled'
           } else if (response.status === 403) {
             errorMessage = 'Not authorized to cancel this booking'
+          } else if (response.status === 400) {
+            errorMessage = 'This booking cannot be cancelled (it may be approved or in the past)'
           } else {
             errorMessage = `Server error (${response.status})`
           }
@@ -165,11 +191,50 @@ export default function BookingsPage() {
       console.error('Failed to cancel booking:', cancelError)
       setError('Failed to cancel booking - please check your connection')
       setTimeout(() => setError(''), 5000)
+    } finally {
+      setCancellingBookingId(null)
     }
   }
 
   if (!user) {
     return null
+  }
+
+  // Only students can view their bookings
+  if (user.role !== 'STUDENT') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+
+        <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">Access Restricted</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Only students can view personal bookings.
+                </p>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600">
+                    {user.role === 'TEACHER' && 'As a teacher, you can view and manage all student bookings from the admin dashboard.'}
+                    {user.role === 'ADMIN' && 'As an administrator, you can view and manage all bookings from the admin dashboard.'}
+                  </p>
+                </div>
+                <div className="mt-6">
+                  <button
+                    onClick={() => router.push('/admin')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Go to Admin Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -294,10 +359,27 @@ export default function BookingsPage() {
                         </span>
                         {canCancelBooking(booking) && (
                           <button
-                            onClick={() => handleCancelBooking(booking.id)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log('Button clicked!')
+                              console.log('User:', user)
+                              console.log('Token:', token)
+                              handleCancelBooking(booking.id)
+                            }}
+                            disabled={cancellingBookingId === booking.id}
+                            className={`inline-flex items-center px-3 py-1 border text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                              cancellingBookingId === booking.id
+                                ? 'border-red-200 text-red-500 bg-red-25 cursor-not-allowed'
+                                : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100 hover:border-red-400'
+                            }`}
                           >
-                            Cancel
+                            {cancellingBookingId === booking.id ? (
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            ) : (
+                              <X className="h-3 w-3 mr-1" />
+                            )}
+                            {cancellingBookingId === booking.id ? 'Cancelling...' : 'Cancel'}
                           </button>
                         )}
                       </div>

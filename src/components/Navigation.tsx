@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './AuthProvider'
-import { LogOut, User, Calendar, Settings, Home } from 'lucide-react'
+import { LogOut, User, Calendar, Settings, Home, Plus } from 'lucide-react'
 
 export const Navigation = () => {
   const { user, logout } = useAuth()
@@ -38,13 +38,25 @@ export const Navigation = () => {
               <span>Dashboard</span>
             </Link>
 
-            <Link
-              href="/bookings"
-              className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              <Calendar className="h-4 w-4" />
-              <span>My Bookings</span>
-            </Link>
+            {user.role === 'STUDENT' && (
+              <Link
+                href="/book"
+                className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Book Lab</span>
+              </Link>
+            )}
+
+            {user.role === 'STUDENT' && (
+              <Link
+                href="/bookings"
+                className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>My Bookings</span>
+              </Link>
+            )}
 
             {(user.role === 'ADMIN' || user.role === 'TEACHER') && (
               <Link

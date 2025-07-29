@@ -45,7 +45,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Not authorized to cancel this booking' }, { status: 403 })
     }
 
-    // Check if booking can be cancelled (must be PENDING or APPROVED and in the future)
+    // Check if booking can be cancelled (must be PENDING and in the future)
     const now = new Date()
     const bookingStartTime = new Date(existingBooking.startTime)
     
@@ -53,8 +53,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cannot cancel past bookings' }, { status: 400 })
     }
 
-    if (!['PENDING', 'APPROVED'].includes(existingBooking.status)) {
-      return NextResponse.json({ error: 'Booking cannot be cancelled' }, { status: 400 })
+    if (existingBooking.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Only pending bookings can be cancelled' }, { status: 400 })
     }
 
     // Update booking status to CANCELLED

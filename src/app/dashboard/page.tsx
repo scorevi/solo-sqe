@@ -68,31 +68,35 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Link
-              href="/book"
-              className="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-md transition-colors"
-            >
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 mr-3" />
-                <div>
-                  <h3 className="text-lg font-semibold">Book a Lab</h3>
-                  <p className="text-blue-100">Reserve computer lab time</p>
+            {user.role === 'STUDENT' && (
+              <Link
+                href="/book"
+                className="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-md transition-colors"
+              >
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 mr-3" />
+                  <div>
+                    <h3 className="text-lg font-semibold">Book a Lab</h3>
+                    <p className="text-blue-100">Reserve computer lab time</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            )}
 
-            <Link
-              href="/bookings"
-              className="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg shadow-md transition-colors"
-            >
-              <div className="flex items-center">
-                <BookOpen className="h-8 w-8 mr-3" />
-                <div>
-                  <h3 className="text-lg font-semibold">My Bookings</h3>
-                  <p className="text-green-100">View your reservations</p>
+            {user.role === 'STUDENT' && (
+              <Link
+                href="/bookings"
+                className="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg shadow-md transition-colors"
+              >
+                <div className="flex items-center">
+                  <BookOpen className="h-8 w-8 mr-3" />
+                  <div>
+                    <h3 className="text-lg font-semibold">My Bookings</h3>
+                    <p className="text-green-100">View your reservations</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            )}
 
             {(user.role === 'ADMIN' || user.role === 'TEACHER') && (
               <Link
@@ -171,12 +175,14 @@ export default function Dashboard() {
                         >
                           View Details
                         </Link>
-                        <Link
-                          href={`/book?labId=${lab.id}`}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                        >
-                          Book Now
-                        </Link>
+                        {user?.role === 'STUDENT' && (
+                          <Link
+                            href={`/book?labId=${lab.id}`}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                          >
+                            Book Now
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>

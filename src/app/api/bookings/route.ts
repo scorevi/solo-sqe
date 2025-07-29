@@ -19,10 +19,21 @@ export async function GET(request: NextRequest) {
     const userId = url.searchParams.get('userId')
 
     let whereCondition = {}
-    if (payload.role === 'STUDENT' || payload.role === 'TEACHER') {
+    
+    // Students can only view their own bookings
+    if (payload.role === 'STUDENT') {
       whereCondition = { userId: payload.userId }
-    } else if (userId && payload.role === 'ADMIN') {
-      whereCondition = { userId }
+    } 
+    // Teachers can view their own bookings (if they had any, but they can't create them)
+    else if (payload.role === 'TEACHER') {
+      whereCondition = { userId: payload.userId }
+    }
+    // Admins can view all bookings or specific user's bookings
+    else if (payload.role === 'ADMIN') {
+      if (userId) {
+        whereCondition = { userId }
+      }
+      // If no userId specified, admin sees all bookings
     }
 
     const bookings = await prisma.booking.findMany({
@@ -71,6 +82,14 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token)
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Only students can create bookings
+    if (payload.role !== 'STUDENT') {
+      return NextResponse.json(
+        { error: 'Only students can make lab reservations' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -130,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     if (!lab) {
       return NextResponse.json(
-        { error: 'Lab not found' },
+        { error: `Lab with ID '${validatedData.labId}' not found` },
         { status: 400 }
       )
     }
@@ -143,7 +162,7 @@ export async function POST(request: NextRequest) {
 
       if (!computer) {
         return NextResponse.json(
-          { error: 'Computer not found' },
+          { error: `Computer with ID '${validatedData.computerId}' not found` },
           { status: 400 }
         )
       }
