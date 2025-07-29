@@ -22,7 +22,6 @@ import {
   calculateRealTimeStatus, 
   getStatusDisplay, 
   formatTimeRange, 
-  canCancelBooking,
   getTimeRemaining,
   type BookingStatus 
 } from '@/lib/booking-utils'
@@ -95,11 +94,6 @@ export default function BookingsPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const getStatusColor = (status: BookingStatus) => {
-    const display = getStatusDisplay(status)
-    return `${display.bgColor} ${display.color}`
-  }
-
   const getStatusIcon = (status: BookingStatus) => {
     switch (status) {
       case 'PENDING':
@@ -117,18 +111,6 @@ export default function BookingsPage() {
       default:
         return <Clock className="h-4 w-4" />
     }
-  }
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
   }
 
   const canCancelBooking = (booking: Booking) => {

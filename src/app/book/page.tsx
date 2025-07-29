@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { Navigation } from '@/components/Navigation'
@@ -22,7 +22,7 @@ interface Computer {
   isWorking: boolean
 }
 
-export default function BookPage() {
+function BookPageContent() {
   const { user, token } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -482,5 +482,17 @@ export default function BookPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <BookPageContent />
+    </Suspense>
   )
 }

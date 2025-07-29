@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { Navigation } from '@/components/Navigation'
+import SeatMap from '@/components/SeatMap'
+import SeatSelectionBooking from '@/components/SeatSelectionBooking'
 import Link from 'next/link'
 import { 
   Computer, 
@@ -13,9 +15,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Plus,
-  PlayCircle,
-  Square
+  Monitor,
+  Calendar
 } from 'lucide-react'
 import { 
   calculateRealTimeStatus, 
@@ -67,6 +68,7 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [labId, setLabId] = useState<string>('')
+  const [currentView, setCurrentView] = useState<'overview' | 'seat-map' | 'book-seat'>('overview')
 
   useEffect(() => {
     const getParams = async () => {
@@ -104,21 +106,15 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
     fetchLabDetails()
   }, [labId, token])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'text-yellow-600'
-      case 'APPROVED':
-        return 'text-green-600'
-      case 'REJECTED':
-        return 'text-red-600'
-      case 'COMPLETED':
-        return 'text-blue-600'
-      case 'CANCELLED':
-        return 'text-gray-600'
-      default:
-        return 'text-gray-600'
-    }
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   const getStatusIcon = (status: string) => {
@@ -136,17 +132,6 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
       default:
         return <Clock className="h-4 w-4" />
     }
-  }
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
   }
 
   const getActiveBookings = () => {
@@ -257,22 +242,59 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
                   </div>
                 </div>
               </div>
-              {user?.role === 'STUDENT' && (
-                <Link
-                  href={`/book?labId=${lab.id}`}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Book This Lab
-                </Link>
-              )}
             </div>
           </div>
 
-          {/* Status Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex items-center">
+          {/* Navigation Tabs */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setCurrentView('overview')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    currentView === 'overview'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Computer className="h-4 w-4 inline mr-2" />
+                  Overview
+                </button>
+                <button
+                  onClick={() => setCurrentView('seat-map')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    currentView === 'seat-map'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Monitor className="h-4 w-4 inline mr-2" />
+                  Real-time Seat Map
+                </button>
+                {user?.role === 'STUDENT' && (
+                  <button
+                    onClick={() => setCurrentView('book-seat')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      currentView === 'book-seat'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4 inline mr-2" />
+                    Book a Seat
+                  </button>
+                )}
+              </nav>
+            </div>
+          </div>
+
+          {/* Content based on current view */}
+          {currentView === 'overview' && (
+            <>
+              {/* Status Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <div className="flex items-center">
                 <Computer className="h-8 w-8 text-blue-500" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Computers</p>
@@ -417,6 +439,27 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
               </div>
             </div>
           </div>
+          </>
+          )}
+
+          {/* Seat Map View */}
+          {currentView === 'seat-map' && (
+            <SeatMap labId={labId} refreshInterval={5000} />
+          )}
+
+          {/* Book Seat View */}
+          {currentView === 'book-seat' && user?.role === 'STUDENT' && (
+            <SeatSelectionBooking 
+              labId={labId} 
+              labName={lab.name}
+              onBookingComplete={() => {
+                setCurrentView('overview')
+                // Optionally refresh lab data
+                window.location.reload()
+              }}
+              onCancel={() => setCurrentView('overview')}
+            />
+          )}
         </div>
       </div>
     </div>
