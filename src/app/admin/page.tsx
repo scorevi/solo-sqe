@@ -16,8 +16,17 @@ import {
   Clock,
   CheckCircle,
   X,
-  AlertCircle
+  AlertCircle,
+  PlayCircle,
+  Square
 } from 'lucide-react'
+import { 
+  calculateRealTimeStatus, 
+  getStatusDisplay, 
+  formatTimeRange,
+  getTimeRemaining,
+  type BookingStatus 
+} from '@/lib/booking-utils'
 
 interface Stats {
   totalUsers: number
@@ -49,7 +58,7 @@ interface Booking {
   startTime: string
   endTime: string
   purpose: string | null
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED'
+  status: BookingStatus
   user: {
     name: string
     email: string
@@ -157,6 +166,24 @@ export default function AdminPage() {
     
     fetchData()
   }, [user, token, fetchData])
+
+  // Real-time updates for booking statuses
+  useEffect(() => {
+    if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
+      return
+    }
+
+    const interval = setInterval(() => {
+      setBookings(currentBookings => 
+        currentBookings.map(booking => ({
+          ...booking,
+          // Force re-render to update real-time status
+        }))
+      )
+    }, 30000) // Update every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [user])
 
   const handleBookingAction = async (bookingId: string, action: 'approve' | 'reject') => {
     try {
@@ -600,42 +627,66 @@ export default function AdminPage() {
                 <h3 className="text-lg font-medium text-gray-900">Recent Bookings</h3>
               </div>
               <div className="divide-y divide-gray-200">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-sm font-medium text-gray-900">
-                            {booking.user.name}
-                          </h4>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                            {booking.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">{booking.user.email}</p>
-                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {booking.lab.name}
+                {bookings.map((booking) => {
+                  const realTimeStatus = calculateRealTimeStatus(booking)
+                  const statusDisplay = getStatusDisplay(realTimeStatus)
+                  const timeRemaining = realTimeStatus === 'APPROVED' 
+                    ? getTimeRemaining(booking.startTime)
+                    : realTimeStatus === 'IN_PROGRESS'
+                    ? getTimeRemaining(booking.endTime)
+                    : null
+                  
+                  // Debug logging
+                  if (timeRemaining) {
+                    console.log(`Booking ${booking.id}: Status=${realTimeStatus}, TimeRemaining=`, timeRemaining)
+                  }
+                  
+                  return (
+                    <div key={booking.id} className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              {booking.user.name}
+                            </h4>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.bgColor} ${statusDisplay.color}`}>
+                              {statusDisplay.label}
+                            </span>
                           </div>
-                          {booking.computer && (
+                          <p className="text-sm text-gray-600">{booking.user.email}</p>
+                          <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
                             <div className="flex items-center">
-                              <Computer className="h-4 w-4 mr-1" />
-                              {booking.computer.name}
+                              <MapPin className="h-4 w-4 mr-1" />
+                              {booking.lab.name}
                             </div>
-                          )}
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {formatDateTime(booking.startTime)} - {formatDateTime(booking.endTime)}
+                            {booking.computer && (
+                              <div className="flex items-center">
+                                <Computer className="h-4 w-4 mr-1" />
+                                {booking.computer.name}
+                              </div>
+                            )}
                           </div>
+                          <div className="mt-1 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {formatTimeRange(booking.startTime, booking.endTime)}
+                            </div>
+                            {timeRemaining && (
+                              <div className="flex items-center mt-1 px-2 py-1 bg-blue-50 rounded">
+                                <Clock className="h-4 w-4 mr-1 text-blue-500" />
+                                <span className={`font-medium text-sm ${timeRemaining.isOverdue ? 'text-red-600' : 'text-blue-600'}`}>
+                                  {realTimeStatus === 'IN_PROGRESS' ? '⏰ Ends in ' : '🕒 Starts in '}{timeRemaining.text}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {booking.purpose && (
+                            <p className="mt-1 text-sm text-gray-600">
+                              <strong>Purpose:</strong> {booking.purpose}
+                            </p>
+                          )}
                         </div>
-                        {booking.purpose && (
-                          <p className="mt-1 text-sm text-gray-600">
-                            <strong>Purpose:</strong> {booking.purpose}
-                          </p>
-                        )}
-                      </div>
-                      {booking.status === 'PENDING' && (
+                        {booking.status === 'PENDING' && (
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleBookingAction(booking.id, 'approve')}
@@ -655,7 +706,8 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

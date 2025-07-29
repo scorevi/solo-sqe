@@ -14,15 +14,25 @@ import {
   CheckCircle, 
   X,
   Plus,
-  Loader2
+  Loader2,
+  PlayCircle,
+  Square
 } from 'lucide-react'
+import { 
+  calculateRealTimeStatus, 
+  getStatusDisplay, 
+  formatTimeRange, 
+  canCancelBooking,
+  getTimeRemaining,
+  type BookingStatus 
+} from '@/lib/booking-utils'
 
 interface Booking {
   id: string
   startTime: string
   endTime: string
   purpose: string | null
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED'
+  status: BookingStatus
   createdAt: string
   lab: {
     name: string
@@ -71,33 +81,37 @@ export default function BookingsPage() {
     }
   }, [token])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800'
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800'
-      case 'COMPLETED':
-        return 'bg-blue-100 text-blue-800'
-      case 'CANCELLED':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  // Real-time status updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBookings(currentBookings => 
+        currentBookings.map(booking => ({
+          ...booking,
+          // Force re-render to update real-time status
+        }))
+      )
+    }, 30000) // Update every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const getStatusColor = (status: BookingStatus) => {
+    const display = getStatusDisplay(status)
+    return `${display.bgColor} ${display.color}`
   }
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: BookingStatus) => {
     switch (status) {
       case 'PENDING':
         return <Clock className="h-4 w-4" />
       case 'APPROVED':
         return <CheckCircle className="h-4 w-4" />
+      case 'IN_PROGRESS':
+        return <PlayCircle className="h-4 w-4" />
+      case 'COMPLETED':
+        return <Square className="h-4 w-4" />
       case 'REJECTED':
         return <X className="h-4 w-4" />
-      case 'COMPLETED':
-        return <CheckCircle className="h-4 w-4" />
       case 'CANCELLED':
         return <X className="h-4 w-4" />
       default:
@@ -313,51 +327,63 @@ export default function BookingsPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="p-6 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Computer className="h-10 w-10 text-blue-500" />
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {booking.lab.name}
-                          </h3>
-                          <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {booking.lab.location}
-                            </div>
-                            {booking.computer && (
+                {bookings.map((booking) => {
+                  const realTimeStatus = calculateRealTimeStatus(booking)
+                  const statusDisplay = getStatusDisplay(realTimeStatus)
+                  const timeRemaining = realTimeStatus === 'APPROVED' 
+                    ? getTimeRemaining(booking.startTime)
+                    : realTimeStatus === 'IN_PROGRESS'
+                    ? getTimeRemaining(booking.endTime)
+                    : null
+                  
+                  return (
+                    <div key={booking.id} className="p-6 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Computer className="h-10 w-10 text-blue-500" />
+                          <div className="flex-1">
+                            <h3 className="text-lg font-medium text-gray-900">
+                              {booking.lab.name}
+                            </h3>
+                            <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
                               <div className="flex items-center">
-                                <Computer className="h-4 w-4 mr-1" />
-                                {booking.computer.name}
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {booking.lab.location}
                               </div>
+                              {booking.computer && (
+                                <div className="flex items-center">
+                                  <Computer className="h-4 w-4 mr-1" />
+                                  {booking.computer.name}
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-2 text-sm text-gray-600">
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                <span>{formatTimeRange(booking.startTime, booking.endTime)}</span>
+                              </div>
+                              {timeRemaining && (
+                                <div className="flex items-center mt-1">
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  <span className={timeRemaining.isOverdue ? 'text-red-600' : 'text-gray-600'}>
+                                    {timeRemaining.text}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {booking.purpose && (
+                              <p className="mt-2 text-sm text-gray-600">
+                                <strong>Purpose:</strong> {booking.purpose}
+                              </p>
                             )}
                           </div>
-                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {formatDateTime(booking.startTime)}
-                            </div>
-                            <span>to</span>
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {formatDateTime(booking.endTime)}
-                            </div>
-                          </div>
-                          {booking.purpose && (
-                            <p className="mt-2 text-sm text-gray-600">
-                              <strong>Purpose:</strong> {booking.purpose}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                          {getStatusIcon(booking.status)}
-                          <span className="ml-1">{booking.status}</span>
-                        </span>
-                        {canCancelBooking(booking) && (
+                        <div className="flex items-center space-x-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.bgColor} ${statusDisplay.color}`}>
+                            {getStatusIcon(realTimeStatus)}
+                            <span className="ml-1">{statusDisplay.label}</span>
+                          </span>
+                          {canCancelBooking(booking) && (
                           <button
                             onClick={(e) => {
                               e.preventDefault()
@@ -385,7 +411,8 @@ export default function BookingsPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

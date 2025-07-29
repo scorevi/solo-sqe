@@ -13,8 +13,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Plus
+  Plus,
+  PlayCircle,
+  Square
 } from 'lucide-react'
+import { 
+  calculateRealTimeStatus, 
+  getStatusDisplay, 
+  formatTimeRange,
+  type BookingStatus 
+} from '@/lib/booking-utils'
 
 interface Computer {
   id: string
@@ -27,7 +35,7 @@ interface Booking {
   id: string
   startTime: string
   endTime: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED'
+  status: BookingStatus
   user: {
     name: string
   }
@@ -381,23 +389,28 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
                     <p className="text-gray-500 text-center py-4">No upcoming bookings</p>
                   ) : (
                     <div className="space-y-3">
-                      {upcomingBookings.map((booking) => (
-                        <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-medium text-gray-900">{booking.user.name}</p>
-                            <p className="text-sm text-gray-600">
-                              {booking.computer?.name || 'Any computer'}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDateTime(booking.startTime)} - {formatDateTime(booking.endTime)}
-                            </p>
+                      {upcomingBookings.map((booking) => {
+                        const realTimeStatus = calculateRealTimeStatus(booking)
+                        const statusDisplay = getStatusDisplay(realTimeStatus)
+                        
+                        return (
+                          <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium text-gray-900">{booking.user.name}</p>
+                              <p className="text-sm text-gray-600">
+                                {booking.computer?.name || 'Any computer'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatTimeRange(booking.startTime, booking.endTime)}
+                              </p>
+                            </div>
+                            <div className={`flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.bgColor} ${statusDisplay.color}`}>
+                              {getStatusIcon(realTimeStatus)}
+                              <span className="ml-1">{statusDisplay.label}</span>
+                            </div>
                           </div>
-                          <div className={`flex items-center ${getStatusColor(booking.status)}`}>
-                            {getStatusIcon(booking.status)}
-                            <span className="text-sm ml-1">{booking.status}</span>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>

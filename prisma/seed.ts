@@ -10,7 +10,7 @@ async function hashPassword(password: string): Promise<string> {
 async function main() {
   console.log('Seeding database...')
 
-  // Clear existing data to avoid conflicts
+  // Clear existing data to avoid confli  console.log('📅 Sample bookings: 5 realistic bookings created (1 in progress, 2 upcoming, 1 completed, 1 pending)')ts
   await prisma.booking.deleteMany()
   await prisma.computer.deleteMany()
   await prisma.computerLab.deleteMany()
@@ -232,46 +232,89 @@ async function main() {
     createdComputers.push(created)
   }
 
-  // Create sample bookings with realistic purposes
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(10, 0, 0, 0)
-
-  const tomorrowEnd = new Date(tomorrow)
-  tomorrowEnd.setHours(12, 0, 0, 0)
-
+  // Filter working computers for bookings
   const workingComputers = createdComputers.filter(c => c.isWorking)
 
-  // Sample booking for Computer Science Lab
+  // Create sample bookings with realistic purposes and varied statuses
+  const now = new Date()
+  
+  // Booking 1: Currently in progress
+  const inProgressStart = new Date(now.getTime() - 30 * 60 * 1000) // Started 30 minutes ago
+  const inProgressEnd = new Date(now.getTime() + 90 * 60 * 1000) // Ends in 90 minutes
+  
   await prisma.booking.create({
     data: {
       userId: student.id,
       labId: lab1.id,
       computerId: workingComputers.find(c => c.name.startsWith('CS-'))?.id,
-      startTime: tomorrow,
-      endTime: tomorrowEnd,
+      startTime: inProgressStart,
+      endTime: inProgressEnd,
       purpose: 'Software Engineering Project - Full-Stack Web Development',
       status: 'APPROVED',
     },
   })
 
-  // Sample booking for Data Science Lab
-  const dayAfterTomorrow = new Date()
-  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2)
-  dayAfterTomorrow.setHours(14, 0, 0, 0)
+  // Booking 2: Future booking (approved)
+  const futureStart = new Date(now.getTime() + 2 * 60 * 60 * 1000) // Starts in 2 hours
+  const futureEnd = new Date(now.getTime() + 5 * 60 * 60 * 1000) // Ends in 5 hours
   
-  const dayAfterTomorrowEnd = new Date(dayAfterTomorrow)
-  dayAfterTomorrowEnd.setHours(17, 0, 0, 0)
+  await prisma.booking.create({
+    data: {
+      userId: student2.id,
+      labId: lab5.id,
+      computerId: workingComputers.find(c => c.name.startsWith('DS-'))?.id,
+      startTime: futureStart,
+      endTime: futureEnd,
+      purpose: 'Machine Learning Research - Deep Learning Model Training',
+      status: 'APPROVED',
+    },
+  })
 
+  // Booking 3: Recently completed
+  const completedStart = new Date(now.getTime() - 3 * 60 * 60 * 1000) // Started 3 hours ago
+  const completedEnd = new Date(now.getTime() - 30 * 60 * 1000) // Ended 30 minutes ago
+  
+  await prisma.booking.create({
+    data: {
+      userId: student3.id,
+      labId: lab3.id,
+      computerId: workingComputers.find(c => c.name.startsWith('DM-'))?.id,
+      startTime: completedStart,
+      endTime: completedEnd,
+      purpose: 'Digital Media Project - 3D Animation Rendering',
+      status: 'APPROVED',
+    },
+  })
+
+  // Booking 4: Pending approval
+  const pendingStart = new Date(now.getTime() + 24 * 60 * 60 * 1000) // Tomorrow
+  const pendingEnd = new Date(now.getTime() + 27 * 60 * 60 * 1000) // Tomorrow + 3 hours
+  
+  await prisma.booking.create({
+    data: {
+      userId: student4.id,
+      labId: lab2.id,
+      computerId: workingComputers.find(c => c.name.startsWith('ENG-'))?.id,
+      startTime: pendingStart,
+      endTime: pendingEnd,
+      purpose: 'Engineering CAD Project - 3D Mechanical Design',
+      status: 'PENDING',
+    },
+  })
+
+  // Booking 5: Mac lab booking (future)
+  const macStart = new Date(now.getTime() + 6 * 60 * 60 * 1000) // In 6 hours
+  const macEnd = new Date(now.getTime() + 10 * 60 * 60 * 1000) // In 10 hours
+  
   await prisma.booking.create({
     data: {
       userId: student.id,
-      labId: lab5.id,
-      computerId: workingComputers.find(c => c.name.startsWith('DS-'))?.id,
-      startTime: dayAfterTomorrow,
-      endTime: dayAfterTomorrowEnd,
-      purpose: 'Machine Learning Research - Deep Learning Model Training',
-      status: 'PENDING',
+      labId: lab6.id,
+      computerId: workingComputers.find(c => c.name.startsWith('MAC-'))?.id,
+      startTime: macStart,
+      endTime: macEnd,
+      purpose: 'iOS App Development - Swift Programming',
+      status: 'APPROVED',
     },
   })
 
