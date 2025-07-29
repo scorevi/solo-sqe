@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     const conflictingBooking = await prisma.booking.findFirst({
       where: {
         labId: validatedData.labId,
-        computerId: validatedData.computerId || undefined,
+        computerId: validatedData.computerId || null,
         status: {
           in: ['PENDING', 'APPROVED'],
         },
@@ -123,11 +123,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verify that the lab exists
+    const lab = await prisma.computerLab.findUnique({
+      where: { id: validatedData.labId }
+    })
+
+    if (!lab) {
+      return NextResponse.json(
+        { error: 'Lab not found' },
+        { status: 400 }
+      )
+    }
+
+    // Verify that the computer exists if specified
+    if (validatedData.computerId) {
+      const computer = await prisma.computer.findUnique({
+        where: { id: validatedData.computerId }
+      })
+
+      if (!computer) {
+        return NextResponse.json(
+          { error: 'Computer not found' },
+          { status: 400 }
+        )
+      }
+
+      if (computer.labId !== validatedData.labId) {
+        return NextResponse.json(
+          { error: 'Computer does not belong to the specified lab' },
+          { status: 400 }
+        )
+      }
+    }
+
     const booking = await prisma.booking.create({
       data: {
-        ...validatedData,
+        labId: validatedData.labId,
+        computerId: validatedData.computerId || null,
         startTime,
         endTime,
+        purpose: validatedData.purpose || null,
         userId: payload.userId,
       },
       include: {
@@ -170,7 +205,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(booking, { status: 201 })
   } catch (createError) {
+    console.error('Booking creation error:', createError)
+    
     if (createError instanceof Error) {
+      // Check for specific Prisma errors
+      if (createError.message.includes('Foreign key constraint')) {
+        return NextResponse.json(
+          { error: 'Invalid lab or computer ID provided' },
+          { status: 400 }
+        )
+      }
       return NextResponse.json({ error: createError.message }, { status: 400 })
     }
     return NextResponse.json(
