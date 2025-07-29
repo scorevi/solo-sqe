@@ -7,15 +7,17 @@ import { generateToken } from '../src/lib/auth'
 
 const prisma = new PrismaClient()
 
+// Declare variables at module level so they can be shared across describe blocks
+let adminUser: any
+let studentUser: any
+let teacherUser: any
+let adminToken: string
+let studentToken: string
+let teacherToken: string
+let testLab: any
+let testComputer: any
+
 describe('Computer Lab Booking System Integration', () => {
-  let adminUser: any
-  let studentUser: any
-  let teacherUser: any
-  let adminToken: string
-  let studentToken: string
-  let teacherToken: string
-  let testLab: any
-  let testComputer: any
 
   beforeAll(async () => {
     // Clean up test data
@@ -266,41 +268,41 @@ describe('Computer Lab Booking System Integration', () => {
       expect(response.status).toBe(401)
     })
   })
-})
 
-// Performance and Load Testing
-describe('System Performance', () => {
-  test('should handle multiple concurrent bookings', async () => {
-    const promises = []
-    const baseTime = Date.now() + 48 * 60 * 60 * 1000 // Day after tomorrow
+  // Performance and Load Testing
+  describe('System Performance', () => {
+    test('should handle multiple concurrent bookings', async () => {
+      const promises = []
+      const baseTime = Date.now() + 48 * 60 * 60 * 1000 // Day after tomorrow
 
-    // Try to create 5 concurrent bookings for different time slots
-    for (let i = 0; i < 5; i++) {
-      const startTime = new Date(baseTime + i * 3 * 60 * 60 * 1000) // 3-hour intervals
-      const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000) // 2-hour duration
+      // Try to create 5 concurrent bookings for different time slots
+      for (let i = 0; i < 5; i++) {
+        const startTime = new Date(baseTime + i * 3 * 60 * 60 * 1000) // 3-hour intervals
+        const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000) // 2-hour duration
 
-      promises.push(
-        fetch('http://localhost:3001/api/bookings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${studentToken}`
-          },
-          body: JSON.stringify({
-            labId: testLab.id,
-            startTime: startTime.toISOString(),
-            endTime: endTime.toISOString(),
-            purpose: `Load test booking ${i + 1}`
+        promises.push(
+          fetch('http://localhost:3001/api/bookings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${studentToken}`
+            },
+            body: JSON.stringify({
+              labId: testLab.id,
+              startTime: startTime.toISOString(),
+              endTime: endTime.toISOString(),
+              purpose: `Load test booking ${i + 1}`
+            })
           })
-        })
-      )
-    }
+        )
+      }
 
-    const responses = await Promise.all(promises)
-    const successfulBookings = responses.filter(r => r.status === 201)
+      const responses = await Promise.all(promises)
+      const successfulBookings = responses.filter(r => r.status === 201)
 
-    // All should be successful since they don't conflict
-    expect(successfulBookings).toHaveLength(5)
+      // All should be successful since they don't conflict
+      expect(successfulBookings).toHaveLength(5)
+    })
   })
 })
 
