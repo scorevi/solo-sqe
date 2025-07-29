@@ -675,7 +675,7 @@ export default function AdminPage() {
                               <div className="flex items-center mt-1 px-2 py-1 bg-blue-50 rounded">
                                 <Clock className="h-4 w-4 mr-1 text-blue-500" />
                                 <span className={`font-medium text-sm ${timeRemaining.isOverdue ? 'text-red-600' : 'text-blue-600'}`}>
-                                  {realTimeStatus === 'IN_PROGRESS' ? '⏰ Ends in ' : '🕒 Starts in '}{timeRemaining.text}
+                                  {realTimeStatus === 'IN_PROGRESS' ? ' Ends in ' : ' Starts in '}{timeRemaining.text}
                                 </span>
                               </div>
                             )}
