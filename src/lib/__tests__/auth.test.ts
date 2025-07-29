@@ -62,7 +62,7 @@ describe('Authentication Utilities', () => {
     describe('loginSchema', () => {
       it('should validate correct login data', () => {
         const validData = {
-          email: 'test@example.com',
+          emailOrUsername: 'test@example.com',
           password: 'password123',
         }
 
@@ -70,9 +70,9 @@ describe('Authentication Utilities', () => {
         expect(result).toEqual(validData)
       })
 
-      it('should reject invalid email', () => {
+      it('should reject invalid email or username', () => {
         const invalidData = {
-          email: 'invalid-email',
+          emailOrUsername: '',
           password: 'password123',
         }
 
@@ -93,6 +93,7 @@ describe('Authentication Utilities', () => {
       it('should validate correct registration data', () => {
         const validData = {
           name: 'John Doe',
+          username: 'johndoe',
           email: 'john@example.com',
           password: 'password123',
           role: 'STUDENT' as const,
@@ -105,6 +106,7 @@ describe('Authentication Utilities', () => {
       it('should default role to STUDENT', () => {
         const validData = {
           name: 'John Doe',
+          username: 'johndoe',
           email: 'john@example.com',
           password: 'password123',
         }
@@ -116,9 +118,32 @@ describe('Authentication Utilities', () => {
       it('should reject invalid role', () => {
         const invalidData = {
           name: 'John Doe',
+          username: 'johndoe',
           email: 'john@example.com',
           password: 'password123',
           role: 'INVALID_ROLE',
+        }
+
+        expect(() => registerSchema.parse(invalidData)).toThrow()
+      })
+
+      it('should reject invalid username', () => {
+        const invalidData = {
+          name: 'John Doe',
+          username: 'jo', // too short
+          email: 'john@example.com',
+          password: 'password123',
+        }
+
+        expect(() => registerSchema.parse(invalidData)).toThrow()
+      })
+
+      it('should reject username with invalid characters', () => {
+        const invalidData = {
+          name: 'John Doe',
+          username: 'john@doe', // @ is not allowed
+          email: 'john@example.com',
+          password: 'password123',
         }
 
         expect(() => registerSchema.parse(invalidData)).toThrow()

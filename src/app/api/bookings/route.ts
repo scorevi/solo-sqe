@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { bookingSchema, verifyToken } from '@/lib/auth'
 import { emailService } from '@/lib/email'
+import { BookingStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -114,13 +115,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate booking duration (max 1 week)
+    const maxDuration = 7 * 24 * 60 * 60 * 1000 // 1 week in milliseconds
+    if (endTime.getTime() - startTime.getTime() > maxDuration) {
+      return NextResponse.json(
+        { error: 'Booking duration cannot exceed 1 week' },
+        { status: 400 }
+      )
+    }
+
+    // For students, check active booking limit (max 2 active reservations)
+    if (payload.role === 'STUDENT') {
+      const activeBookingsCount = await prisma.booking.count({
+        where: {
+          userId: payload.userId,
+          status: {
+            in: [BookingStatus.PENDING, BookingStatus.APPROVED],
+          },
+          endTime: {
+            gt: new Date(), // Only count future/active bookings
+          },
+        },
+      })
+
+      if (activeBookingsCount >= 2) {
+        return NextResponse.json(
+          { error: 'Students can only have up to 2 active reservations at a time' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check for conflicting bookings
     const conflictingBooking = await prisma.booking.findFirst({
       where: {
         labId: validatedData.labId,
         computerId: validatedData.computerId || null,
         status: {
-          in: ['PENDING', 'APPROVED'],
+          in: [BookingStatus.PENDING, BookingStatus.APPROVED],
         },
         OR: [
           {

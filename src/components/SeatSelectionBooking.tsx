@@ -44,11 +44,40 @@ export default function SeatSelectionBooking({
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeBookingsCount, setActiveBookingsCount] = useState<number>(0)
 
   // Clear any existing errors when component mounts
   useEffect(() => {
     setError(null)
   }, [])
+
+  // Fetch active bookings count for students
+  useEffect(() => {
+    const fetchActiveBookingsCount = async () => {
+      if (!user || user.role !== 'STUDENT' || !token) return
+
+      try {
+        const response = await fetch('/api/bookings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        
+        if (response.ok) {
+          const bookings = await response.json()
+          const activeCount = bookings.filter((booking: { status: string; endTime: string }) => 
+            ['PENDING', 'APPROVED'].includes(booking.status) && 
+            new Date(booking.endTime) > new Date()
+          ).length
+          setActiveBookingsCount(activeCount)
+        }
+      } catch (err) {
+        console.error('Failed to fetch active bookings count:', err)
+      }
+    }
+
+    fetchActiveBookingsCount()
+  }, [user, token])
 
   useEffect(() => {
     const fetchOccupancy = async () => {
@@ -133,6 +162,30 @@ export default function SeatSelectionBooking({
     setError(null)
 
     try {
+      // Client-side validation
+      const startTime = new Date(formData.startTime)
+      const endTime = new Date(formData.endTime)
+      const now = new Date()
+
+      if (startTime < now) {
+        throw new Error('Cannot book in the past')
+      }
+
+      if (startTime >= endTime) {
+        throw new Error('End time must be after start time')
+      }
+
+      // Check maximum duration (1 week)
+      const maxDuration = 7 * 24 * 60 * 60 * 1000 // 1 week in milliseconds
+      if (endTime.getTime() - startTime.getTime() > maxDuration) {
+        throw new Error('Booking duration cannot exceed 1 week')
+      }
+
+      // Check active bookings limit for students
+      if (user?.role === 'STUDENT' && activeBookingsCount >= 2) {
+        throw new Error('You have reached the maximum limit of 2 active reservations')
+      }
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
@@ -176,6 +229,11 @@ export default function SeatSelectionBooking({
       // Reset form
       setFormData({ startTime: '', endTime: '', purpose: '' })
       setSelectedComputer(null)
+      
+      // Update active bookings count for students
+      if (user?.role === 'STUDENT') {
+        setActiveBookingsCount(prev => prev + 1)
+      }
       
       if (onBookingComplete) {
         onBookingComplete()
@@ -240,6 +298,35 @@ export default function SeatSelectionBooking({
               Booking Details
             </h3>
 
+            {/* Active Bookings Info for Students */}
+            {user?.role === 'STUDENT' && (
+              <div className={`mb-4 p-3 rounded-lg border ${
+                activeBookingsCount >= 2 
+                  ? 'bg-red-50 border-red-200' 
+                  : activeBookingsCount === 1 
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-green-50 border-green-200'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className={`text-sm font-medium ${
+                    activeBookingsCount >= 2 
+                      ? 'text-red-700' 
+                      : activeBookingsCount === 1 
+                        ? 'text-yellow-700'
+                        : 'text-green-700'
+                  }`}>
+                    Active Reservations: {activeBookingsCount}/2
+                  </span>
+                </div>
+                {activeBookingsCount >= 2 && (
+                  <p className="text-xs text-red-600 mt-1">
+                    You have reached the maximum limit of 2 active reservations
+                  </p>
+                )}
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-red-600 text-sm">{error}</p>
@@ -288,6 +375,17 @@ export default function SeatSelectionBooking({
                 />
               </div>
 
+              {/* Booking Limitations Info */}
+              {user?.role === 'STUDENT' && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div>• Maximum 2 active reservations at a time</div>
+                    <div>• Maximum booking duration: 1 week</div>
+                    <div>• Reserved slots are unavailable for the entire period</div>
+                  </div>
+                </div>
+              )}
+
               {/* Selected Computer Info */}
               {selectedComputer && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -318,7 +416,11 @@ export default function SeatSelectionBooking({
 
               <button
                 type="submit"
-                disabled={!selectedComputer || submitting}
+                disabled={
+                  !selectedComputer || 
+                  submitting || 
+                  (user?.role === 'STUDENT' && activeBookingsCount >= 2)
+                }
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {submitting ? (
@@ -326,7 +428,12 @@ export default function SeatSelectionBooking({
                 ) : (
                   <>
                     <Calendar className="h-4 w-4" />
-                    <span>Book Selected Seat</span>
+                    <span>
+                      {user?.role === 'STUDENT' && activeBookingsCount >= 2 
+                        ? 'Maximum Reservations Reached' 
+                        : 'Book Selected Seat'
+                      }
+                    </span>
                   </>
                 )}
               </button>

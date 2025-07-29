@@ -23,6 +23,7 @@ async function main() {
     update: {},
     create: {
       name: 'System Administrator',
+      username: 'admin',
       email: 'scorevi-admin@gmail.com',
       password: adminPassword,
       role: 'ADMIN',
@@ -36,6 +37,7 @@ async function main() {
     update: {},
     create: {
       name: 'Prof. John Teacher',
+      username: 'prof.teacher',
       email: 'scorevi-teacher@gmail.com',
       password: teacherPassword,
       role: 'TEACHER',
@@ -47,6 +49,7 @@ async function main() {
     update: {},
     create: {
       name: 'John Teacher',
+      username: 'john.teacher',
       email: 'teacher@school.edu',
       password: teacherPassword,
       role: 'TEACHER',
@@ -60,6 +63,7 @@ async function main() {
     update: {},
     create: {
       name: 'Jane Student',
+      username: 'jane.student',
       email: 'scorevi@gmail.com',
       password: studentPassword,
       role: 'STUDENT',
@@ -71,6 +75,7 @@ async function main() {
     update: {},
     create: {
       name: 'Jane Student',
+      username: 'jane.s',
       email: 'student@school.edu',
       password: studentPassword,
       role: 'STUDENT',
@@ -82,6 +87,7 @@ async function main() {
     update: {},
     create: {
       name: 'John Doe',
+      username: 'john.doe',
       email: 'john.doe@school.edu',
       password: studentPassword,
       role: 'STUDENT',
@@ -93,6 +99,7 @@ async function main() {
     update: {},
     create: {
       name: 'Alice Smith',
+      username: 'alice.smith',
       email: 'alice.smith@school.edu',
       password: studentPassword,
       role: 'STUDENT',

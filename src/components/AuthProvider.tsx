@@ -5,6 +5,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 interface User {
   id: string
   email: string
+  username: string
   name: string
   role: 'STUDENT' | 'TEACHER' | 'ADMIN'
   createdAt: string
@@ -13,8 +14,8 @@ interface User {
 interface AuthContextType {
   user: User | null
   token: string | null
-  login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string, role?: string) => Promise<void>
+  login: (emailOrUsername: string, password: string) => Promise<void>
+  register: (name: string, username: string, email: string, password: string, role?: string) => Promise<void>
   logout: () => void
   isLoading: boolean
 }
@@ -49,14 +50,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(false)
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (emailOrUsername: string, password: string) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ emailOrUsername, password }),
       })
 
       const data = await response.json()
@@ -78,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const register = async (
     name: string,
+    username: string,
     email: string,
     password: string,
     role: string = 'STUDENT'
@@ -88,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, username, email, password, role }),
       })
 
       const data = await response.json()

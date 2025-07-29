@@ -7,16 +7,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = registerSchema.parse(body)
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+    // Check if user with email or username already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: validatedData.email },
+          { username: validatedData.username },
+        ],
+      },
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User already exists' },
-        { status: 400 }
-      )
+      if (existingUser.email === validatedData.email) {
+        return NextResponse.json(
+          { error: 'Email already exists' },
+          { status: 400 }
+        )
+      } else {
+        return NextResponse.json(
+          { error: 'Username already exists' },
+          { status: 400 }
+        )
+      }
     }
 
     // Hash password and create user
@@ -29,6 +41,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         role: true,
         createdAt: true,
@@ -39,6 +52,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+      username: user.username,
       role: user.role,
     })
 

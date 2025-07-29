@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 export interface JWTPayload {
   userId: string
   email: string
+  username: string
   role: string
 }
 
@@ -35,12 +36,16 @@ export const comparePassword = async (
 
 // Validation schemas
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  emailOrUsername: z.string().min(1, 'Email or username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be at most 30 characters')
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, dots, hyphens, and underscores'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']).default('STUDENT'),

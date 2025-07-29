@@ -8,6 +8,7 @@ import { User, Mail, Lock, AlertCircle, UserCheck } from 'lucide-react'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('STUDENT')
@@ -23,7 +24,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      await register(name, email, password, role)
+      await register(name, username, email, password, role)
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -73,6 +74,26 @@ export default function RegisterPage() {
                   placeholder="Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="username" className="sr-only">
+                Username
+              </label>
+              <div className="relative">
+                <UserCheck className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  className="pl-10 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
             </div>

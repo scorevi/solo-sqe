@@ -7,9 +7,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = loginSchema.parse(body)
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: validatedData.email },
+    // Find user by email or username
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: validatedData.emailOrUsername },
+          { username: validatedData.emailOrUsername },
+        ],
+      },
     })
 
     if (!user) {
@@ -36,12 +41,14 @@ export async function POST(request: NextRequest) {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+      username: user.username,
       role: user.role,
     })
 
     const userResponse = {
       id: user.id,
       email: user.email,
+      username: user.username,
       name: user.name,
       role: user.role,
       createdAt: user.createdAt,

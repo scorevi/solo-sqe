@@ -17,6 +17,7 @@ import {
   generateSeatMap
 } from '@/lib/seat-booking-utils'
 import { getTimeRemaining } from '@/lib/booking-utils'
+import SeatDetailModal from './SeatDetailModal'
 
 interface SeatMapProps {
   labId: string
@@ -27,6 +28,7 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
   const [occupancy, setOccupancy] = useState<LabOccupancy | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedComputer, setSelectedComputer] = useState<ComputerWithBookingStatus | null>(null)
 
   useEffect(() => {
     const fetchOccupancy = async () => {
@@ -137,7 +139,11 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
           {seatMap.map((row, rowIndex) => (
             <div key={rowIndex} className="flex flex-wrap gap-2 justify-center">
               {row.map((computer) => (
-                <SeatIcon key={computer.id} computer={computer} />
+                <SeatIcon 
+                  key={computer.id} 
+                  computer={computer} 
+                  onClick={() => setSelectedComputer(computer)}
+                />
               ))}
             </div>
           ))}
@@ -164,15 +170,25 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
         {/* Hidden div to ensure Tailwind includes reserved seat styling */}
         <div className="hidden bg-yellow-100 border-yellow-200 text-yellow-600"></div>
       </div>
+
+      {/* Seat Detail Modal */}
+      {selectedComputer && (
+        <SeatDetailModal
+          computer={selectedComputer}
+          isOpen={!!selectedComputer}
+          onClose={() => setSelectedComputer(null)}
+        />
+      )}
     </div>
   )
 }
 
 interface SeatIconProps {
   computer: ComputerWithBookingStatus
+  onClick?: () => void
 }
 
-function SeatIcon({ computer }: SeatIconProps) {
+function SeatIcon({ computer, onClick }: SeatIconProps) {
   const statusDisplay = getOccupancyStatusDisplay(computer.occupancyStatus)
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -189,6 +205,11 @@ function SeatIcon({ computer }: SeatIconProps) {
           hover:scale-110 hover:shadow-md
           flex items-center justify-center
         `}
+        onClick={() => {
+          if (onClick) {
+            onClick()
+          }
+        }}
       >
         {computer.occupancyStatus === 'AVAILABLE' && (
           <Monitor className={`h-6 w-6 ${statusDisplay.color}`} />
