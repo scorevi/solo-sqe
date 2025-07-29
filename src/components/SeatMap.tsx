@@ -150,7 +150,7 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
             {[
               { status: 'AVAILABLE', label: 'Available', icon: '🟢' },
               { status: 'OCCUPIED', label: 'Currently in use', icon: '🔴' },
-              { status: 'RESERVED', label: 'Reserved (next 4 hours)', icon: '🟡' },
+              { status: 'RESERVED', label: 'Reserved', icon: '🟡' },
               { status: 'MAINTENANCE', label: 'Under maintenance', icon: '🔧' }
             ].map(({ status, label, icon }) => (
               <div key={status} className="flex items-center space-x-1">
@@ -160,6 +160,9 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
             ))}
           </div>
         </div>
+        
+        {/* Hidden div to ensure Tailwind includes reserved seat styling */}
+        <div className="hidden bg-yellow-100 border-yellow-200 text-yellow-600"></div>
       </div>
     </div>
   )

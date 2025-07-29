@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Safelist for reserved seat styling: bg-yellow-100 border-yellow-200 text-yellow-600 */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

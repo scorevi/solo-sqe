@@ -91,16 +91,16 @@ export function calculateComputerOccupancy(
     }
   }
 
-  // Check for upcoming reservations (within next 4 hours for better visibility)
+  // Check for upcoming reservations (any approved future booking)
   const upcomingBooking = bookings.find(booking => {
     if (booking.computerId !== computer.id) return false
     // Include both APPROVED and PENDING bookings as reserved
     if (booking.status !== 'APPROVED' && booking.status !== 'PENDING') return false
     
     const startTime = new Date(booking.startTime)
-    const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000) // Extended to 4 hours
     
-    return startTime > now && startTime <= fourHoursFromNow
+    // Any future booking shows as reserved (no time window limitation)
+    return startTime > now
   })
 
   if (upcomingBooking) {
