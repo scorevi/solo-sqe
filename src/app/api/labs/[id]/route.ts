@@ -69,6 +69,21 @@ export async function PUT(
     }
 
     const body = await request.json()
+    
+    // If name is being changed, check for duplicates
+    if (body.name) {
+      const existingLab = await prisma.computerLab.findFirst({
+        where: { 
+          name: body.name,
+          id: { not: id } // Exclude current lab from check
+        }
+      })
+
+      if (existingLab) {
+        return NextResponse.json({ error: 'A lab with this name already exists' }, { status: 400 })
+      }
+    }
+
     const lab = await prisma.computerLab.update({
       where: { id },
       data: body,

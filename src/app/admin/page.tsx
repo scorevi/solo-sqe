@@ -74,6 +74,14 @@ export default function AdminPage() {
   const [showAddLabModal, setShowAddLabModal] = useState(false)
   const [showEditLabModal, setShowEditLabModal] = useState(false)
   const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [showEditUserModal, setShowEditUserModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editUser, setEditUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'STUDENT'
+  })
   const [editingLab, setEditingLab] = useState<Lab | null>(null)
   const [newLab, setNewLab] = useState({
     name: '',
@@ -346,6 +354,86 @@ export default function AdminPage() {
     }
   }
 
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setEditUser({
+      name: user.name,
+      email: user.email,
+      password: '', // Leave password empty for optional update
+      role: user.role
+    })
+    setShowEditUserModal(true)
+  }
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!editUser.name || !editUser.email || !editUser.role) {
+      setError('Please fill in all required fields')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    if (!editingUser) return
+
+    try {
+      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editUser),
+      })
+
+      if (response.ok) {
+        setSuccess('User updated successfully')
+        setShowEditUserModal(false)
+        setEditingUser(null)
+        setEditUser({ name: '', email: '', password: '', role: 'STUDENT' })
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to update user')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (updateError) {
+      console.error('Failed to update user:', updateError)
+      setError('Failed to update user')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        setSuccess('User deleted successfully')
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete user')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (deleteError) {
+      console.error('Failed to delete user:', deleteError)
+      setError('Failed to delete user')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
@@ -614,10 +702,16 @@ export default function AdminPage() {
                           {formatDateTime(user.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-blue-600 hover:text-blue-900 mr-3">
+                          <button 
+                            onClick={() => handleEditUser(user)}
+                            className="text-blue-600 hover:text-blue-900 mr-3"
+                          >
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button className="text-red-600 hover:text-red-900">
+                          <button 
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            className="text-red-600 hover:text-red-900"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
@@ -973,6 +1067,110 @@ export default function AdminPage() {
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Create User
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Edit User</h2>
+              <button
+                onClick={() => {
+                  setShowEditUserModal(false)
+                  setEditingUser(null)
+                  setEditUser({ name: '', email: '', password: '', role: 'STUDENT' })
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <form onSubmit={handleUpdateUser}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editUser.name}
+                      onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="Enter name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={editUser.email}
+                      onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="Enter email"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Password (leave empty to keep current)
+                    </label>
+                    <input
+                      type="password"
+                      value={editUser.password}
+                      onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                      placeholder="Enter new password (optional)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role *
+                    </label>
+                    <select
+                      value={editUser.role}
+                      onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                      required
+                    >
+                      <option value="STUDENT">Student</option>
+                      <option value="TEACHER">Teacher</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditUserModal(false)
+                      setEditingUser(null)
+                      setEditUser({ name: '', email: '', password: '', role: 'STUDENT' })
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Update User
                   </button>
                 </div>
               </form>

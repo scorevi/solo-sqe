@@ -27,7 +27,7 @@ model User {
 
 model ComputerLab {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   description String?
   capacity    Int
   location    String

@@ -133,7 +133,7 @@ export default function BookingsPage() {
       })
 
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setSuccess('Booking cancelled successfully')
         // Refresh bookings
         setBookings(prev => prev.map(booking => 

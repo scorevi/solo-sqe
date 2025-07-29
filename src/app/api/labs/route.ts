@@ -51,6 +51,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = labSchema.parse(body)
 
+    // Check if lab with this name already exists
+    const existingLab = await prisma.computerLab.findFirst({
+      where: { name: validatedData.name }
+    })
+
+    if (existingLab) {
+      return NextResponse.json({ error: 'A lab with this name already exists' }, { status: 400 })
+    }
+
     const lab = await prisma.computerLab.create({
       data: validatedData,
     })

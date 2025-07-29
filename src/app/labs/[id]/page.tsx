@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { 
   Computer, 
   MapPin, 
   Users, 
   Clock, 
-  Calendar,
   ArrowLeft,
   CheckCircle,
   XCircle,
@@ -57,7 +55,6 @@ interface LabDetailsProps {
 
 export default function LabDetailsPage({ params }: LabDetailsProps) {
   const { user, token } = useAuth()
-  const router = useRouter()
   const [lab, setLab] = useState<Lab | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
