@@ -86,6 +86,10 @@ export async function GET(request: NextRequest) {
         bookingsWithUserName
       )
 
+      // Debug logging
+      console.log(`Lab ${lab.name}: Found ${bookingsWithUserName.length} active bookings`)
+      console.log('Reserved computers:', occupancy.computers.filter(c => c.occupancyStatus === 'RESERVED').length)
+
       return NextResponse.json(occupancy)
     } else {
       // Get all labs occupancy

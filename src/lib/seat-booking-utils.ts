@@ -91,21 +91,29 @@ export function calculateComputerOccupancy(
     }
   }
 
-  // Check for upcoming reservations (within next hour)
+  // Check for upcoming reservations (within next 4 hours for better visibility)
   const upcomingBooking = bookings.find(booking => {
     if (booking.computerId !== computer.id) return false
-    if (booking.status !== 'APPROVED') return false
+    // Include both APPROVED and PENDING bookings as reserved
+    if (booking.status !== 'APPROVED' && booking.status !== 'PENDING') return false
     
     const startTime = new Date(booking.startTime)
-    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
+    const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000) // Extended to 4 hours
     
-    return startTime > now && startTime <= oneHourFromNow
+    return startTime > now && startTime <= fourHoursFromNow
   })
 
   if (upcomingBooking) {
     return {
       ...computer,
-      currentBooking: null,
+      currentBooking: {
+        id: upcomingBooking.id,
+        userId: upcomingBooking.userId,
+        userName: upcomingBooking.userName,
+        startTime: upcomingBooking.startTime,
+        endTime: upcomingBooking.endTime,
+        status: upcomingBooking.status
+      },
       isAvailable: false,
       occupancyStatus: 'RESERVED'
     }

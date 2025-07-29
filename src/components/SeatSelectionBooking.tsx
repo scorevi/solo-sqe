@@ -342,8 +342,9 @@ export default function SeatSelectionBooking({
               <div className="flex flex-wrap gap-4 text-xs">
                 {[
                   { status: 'available', label: 'Available for booking', icon: '🟢' },
-                  { status: 'unavailable', label: 'Unavailable', icon: '🔴' },
+                  { status: 'unavailable', label: 'Unavailable/occupied', icon: '🔴' },
                   { status: 'selected', label: 'Selected', icon: '✅' },
+                  { status: 'reserved', label: 'Reserved (next 4 hours)', icon: '🟡' },
                   { status: 'maintenance', label: 'Under maintenance', icon: '🔧' }
                 ].map(({ status, label, icon }) => (
                   <div key={status} className="flex items-center space-x-1">

@@ -149,9 +149,9 @@ export default function SeatMap({ labId, refreshInterval = 30000 }: SeatMapProps
           <div className="flex flex-wrap gap-4 text-xs">
             {[
               { status: 'AVAILABLE', label: 'Available', icon: '🟢' },
-              { status: 'OCCUPIED', label: 'Occupied', icon: '🔴' },
-              { status: 'RESERVED', label: 'Reserved (1hr)', icon: '🟡' },
-              { status: 'MAINTENANCE', label: 'Maintenance', icon: '🔧' }
+              { status: 'OCCUPIED', label: 'Currently in use', icon: '🔴' },
+              { status: 'RESERVED', label: 'Reserved (next 4 hours)', icon: '🟡' },
+              { status: 'MAINTENANCE', label: 'Under maintenance', icon: '🔧' }
             ].map(({ status, label, icon }) => (
               <div key={status} className="flex items-center space-x-1">
                 <span className="text-sm">{icon}</span>
@@ -210,9 +210,15 @@ function SeatIcon({ computer }: SeatIconProps) {
             {computer.currentBooking && (
               <div className="mt-1 pt-1 border-t border-gray-700">
                 <div>User: {computer.currentBooking.userName}</div>
-                <div>
-                  Ends: {getTimeRemaining(computer.currentBooking.endTime).text}
-                </div>
+                {computer.occupancyStatus === 'OCCUPIED' ? (
+                  <div>
+                    Ends: {getTimeRemaining(computer.currentBooking.endTime).text}
+                  </div>
+                ) : computer.occupancyStatus === 'RESERVED' ? (
+                  <div>
+                    Starts: {getTimeRemaining(computer.currentBooking.startTime).text}
+                  </div>
+                ) : null}
               </div>
             )}
             {computer.specifications && (
