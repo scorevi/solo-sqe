@@ -72,7 +72,15 @@ export default function AdminPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showAddLabModal, setShowAddLabModal] = useState(false)
+  const [showEditLabModal, setShowEditLabModal] = useState(false)
+  const [editingLab, setEditingLab] = useState<Lab | null>(null)
   const [newLab, setNewLab] = useState({
+    name: '',
+    location: '',
+    capacity: '',
+    description: ''
+  })
+  const [editLab, setEditLab] = useState({
     name: '',
     location: '',
     capacity: '',
@@ -164,9 +172,58 @@ export default function AdminPage() {
     window.open(`/labs/${labId}`, '_blank')
   }
 
-  const handleEditLab = (labId: string) => {
-    // For now, we'll show an alert. In the future, this could open a modal or navigate to an edit page
-    alert(`Edit lab functionality would open for lab ID: ${labId}. This can be implemented as a modal or separate page.`)
+  const handleEditLab = (lab: Lab) => {
+    setEditingLab(lab)
+    setEditLab({
+      name: lab.name,
+      location: lab.location,
+      capacity: lab.capacity.toString(),
+      description: '' // We don't have description in the Lab interface, but the API supports it
+    })
+    setShowEditLabModal(true)
+  }
+
+  const handleUpdateLab = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!editingLab || !editLab.name || !editLab.location || !editLab.capacity) {
+      setError('Please fill in all required fields')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/labs/${editingLab.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editLab.name,
+          location: editLab.location,
+          capacity: parseInt(editLab.capacity),
+          description: editLab.description || null,
+        }),
+      })
+
+      if (response.ok) {
+        setSuccess('Lab updated successfully')
+        setShowEditLabModal(false)
+        setEditingLab(null)
+        setEditLab({ name: '', location: '', capacity: '', description: '' })
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to update lab')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (updateError) {
+      console.error('Failed to update lab:', updateError)
+      setError('Failed to update lab')
+      setTimeout(() => setError(''), 5000)
+    }
   }
 
   const handleDeleteLab = async (labId: string, labName: string) => {
@@ -547,7 +604,7 @@ export default function AdminPage() {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button 
-                          onClick={() => handleEditLab(lab.id)}
+                          onClick={() => handleEditLab(lab)}
                           className="text-gray-600 hover:text-gray-900"
                           title="Edit Lab"
                         >
@@ -577,6 +634,202 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      {/* Add Lab Modal */}
+      {showAddLabModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Add New Lab</h3>
+                <button
+                  onClick={() => setShowAddLabModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddLab}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Lab Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newLab.name}
+                      onChange={(e) => setNewLab({ ...newLab, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter lab name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location *
+                    </label>
+                    <input
+                      type="text"
+                      value={newLab.location}
+                      onChange={(e) => setNewLab({ ...newLab, location: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter location"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Capacity *
+                    </label>
+                    <input
+                      type="number"
+                      value={newLab.capacity}
+                      onChange={(e) => setNewLab({ ...newLab, capacity: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter capacity"
+                      min="1"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={newLab.description}
+                      onChange={(e) => setNewLab({ ...newLab, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter description (optional)"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddLabModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Create Lab
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Lab Modal */}
+      {showEditLabModal && editingLab && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Edit Lab</h3>
+                <button
+                  onClick={() => {
+                    setShowEditLabModal(false)
+                    setEditingLab(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateLab}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Lab Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editLab.name}
+                      onChange={(e) => setEditLab({ ...editLab, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter lab name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location *
+                    </label>
+                    <input
+                      type="text"
+                      value={editLab.location}
+                      onChange={(e) => setEditLab({ ...editLab, location: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter location"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Capacity *
+                    </label>
+                    <input
+                      type="number"
+                      value={editLab.capacity}
+                      onChange={(e) => setEditLab({ ...editLab, capacity: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter capacity"
+                      min="1"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={editLab.description}
+                      onChange={(e) => setEditLab({ ...editLab, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter description (optional)"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditLabModal(false)
+                      setEditingLab(null)
+                    }}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Update Lab
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
