@@ -188,17 +188,33 @@ export function getTimeRemaining(targetTime: string | Date): {
     return { text: 'Overdue', isOverdue: true }
   }
   
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
+  const totalSeconds = Math.floor(diff / 1000)
+  const days = Math.floor(totalSeconds / (24 * 60 * 60))
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60))
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60)
+  const seconds = totalSeconds % 60
   
   if (days > 0) {
-    return { text: `${days} day${days > 1 ? 's' : ''} remaining`, isOverdue: false }
+    return { 
+      text: `${days} day${days > 1 ? 's' : ''}, ${hours}h ${minutes}m ${seconds}s`, 
+      isOverdue: false 
+    }
   } else if (hours > 0) {
-    return { text: `${hours} hour${hours > 1 ? 's' : ''} remaining`, isOverdue: false }
+    return { 
+      text: `${hours}h ${minutes}m ${seconds}s`, 
+      isOverdue: false 
+    }
   } else if (minutes > 0) {
-    return { text: `${minutes} minute${minutes > 1 ? 's' : ''} remaining`, isOverdue: false }
+    return { 
+      text: `${minutes}m ${seconds}s`, 
+      isOverdue: false 
+    }
+  } else if (seconds > 0) {
+    return { 
+      text: `${seconds}s`, 
+      isOverdue: false 
+    }
   } else {
-    return { text: 'Starting soon', isOverdue: false }
+    return { text: 'Starting now', isOverdue: false }
   }
 }

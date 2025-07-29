@@ -81,16 +81,16 @@ export default function BookingsPage() {
     }
   }, [token])
 
-  // Real-time status updates every 30 seconds
+  // Real-time status updates every second for precise timers
   useEffect(() => {
     const interval = setInterval(() => {
       setBookings(currentBookings => 
         currentBookings.map(booking => ({
           ...booking,
-          // Force re-render to update real-time status
+          // Force re-render to update real-time status and timers
         }))
       )
-    }, 30000) // Update every 30 seconds
+    }, 1000) // Update every second for precise countdown
 
     return () => clearInterval(interval)
   }, [])
