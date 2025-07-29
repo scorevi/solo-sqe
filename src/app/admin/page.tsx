@@ -71,6 +71,13 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showAddLabModal, setShowAddLabModal] = useState(false)
+  const [newLab, setNewLab] = useState({
+    name: '',
+    location: '',
+    capacity: '',
+    description: ''
+  })
 
   const fetchData = useCallback(async () => {
     try {
@@ -148,6 +155,87 @@ export default function AdminPage() {
     } catch (updateError) {
       console.error(`Failed to ${action} booking:`, updateError)
       setError(`Failed to ${action} booking`)
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const handleViewLab = (labId: string) => {
+    // Navigate to lab details page
+    window.open(`/labs/${labId}`, '_blank')
+  }
+
+  const handleEditLab = (labId: string) => {
+    // For now, we'll show an alert. In the future, this could open a modal or navigate to an edit page
+    alert(`Edit lab functionality would open for lab ID: ${labId}. This can be implemented as a modal or separate page.`)
+  }
+
+  const handleDeleteLab = async (labId: string, labName: string) => {
+    if (!confirm(`Are you sure you want to delete the lab "${labName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/labs/${labId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        setSuccess('Lab deleted successfully')
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to delete lab')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (deleteError) {
+      console.error('Failed to delete lab:', deleteError)
+      setError('Failed to delete lab')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const handleAddLab = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!newLab.name || !newLab.location || !newLab.capacity) {
+      setError('Please fill in all required fields')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/labs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newLab.name,
+          location: newLab.location,
+          capacity: parseInt(newLab.capacity),
+          description: newLab.description || null,
+        }),
+      })
+
+      if (response.ok) {
+        setSuccess('Lab created successfully')
+        setShowAddLabModal(false)
+        setNewLab({ name: '', location: '', capacity: '', description: '' })
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to create lab')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (createError) {
+      console.error('Failed to create lab:', createError)
+      setError('Failed to create lab')
       setTimeout(() => setError(''), 5000)
     }
   }
@@ -437,7 +525,10 @@ export default function AdminPage() {
             <div className="bg-white shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Computer Labs</h3>
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={() => setShowAddLabModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Lab
                 </button>
@@ -448,13 +539,25 @@ export default function AdminPage() {
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-lg font-medium text-gray-900">{lab.name}</h4>
                       <div className="flex space-x-1">
-                        <button className="text-blue-600 hover:text-blue-900">
+                        <button 
+                          onClick={() => handleViewLab(lab.id)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="View Lab Details"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="text-gray-600 hover:text-gray-900">
+                        <button 
+                          onClick={() => handleEditLab(lab.id)}
+                          className="text-gray-600 hover:text-gray-900"
+                          title="Edit Lab"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-900">
+                        <button 
+                          onClick={() => handleDeleteLab(lab.id, lab.name)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete Lab"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

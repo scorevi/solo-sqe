@@ -13,11 +13,6 @@ export async function GET(
       include: {
         computers: true,
         bookings: {
-          where: {
-            startTime: {
-              gte: new Date(),
-            },
-          },
           include: {
             user: {
               select: {
@@ -25,6 +20,19 @@ export async function GET(
                 email: true,
               },
             },
+            computer: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            startTime: 'desc',
+          },
+        },
+        _count: {
+          select: {
+            computers: true,
           },
         },
       },
