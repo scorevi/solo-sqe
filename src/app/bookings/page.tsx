@@ -133,6 +133,7 @@ export default function BookingsPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
         setSuccess('Booking cancelled successfully')
         // Refresh bookings
         setBookings(prev => prev.map(booking => 
@@ -142,13 +143,27 @@ export default function BookingsPage() {
         ))
         setTimeout(() => setSuccess(''), 5000)
       } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to cancel booking')
+        let errorMessage = 'Failed to cancel booking'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          // If we can't parse JSON, it might be an HTML error page
+          console.error('Failed to parse error response:', parseError)
+          if (response.status === 404) {
+            errorMessage = 'Booking not found or already cancelled'
+          } else if (response.status === 403) {
+            errorMessage = 'Not authorized to cancel this booking'
+          } else {
+            errorMessage = `Server error (${response.status})`
+          }
+        }
+        setError(errorMessage)
         setTimeout(() => setError(''), 5000)
       }
     } catch (cancelError) {
       console.error('Failed to cancel booking:', cancelError)
-      setError('Failed to cancel booking')
+      setError('Failed to cancel booking - please check your connection')
       setTimeout(() => setError(''), 5000)
     }
   }
