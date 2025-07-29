@@ -1,0 +1,479 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '@/components/AuthProvider'
+import { Navigation } from '@/components/Navigation'
+import { 
+  Users, 
+  Computer,
+  Calendar,
+  BarChart3,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  MapPin,
+  Clock,
+  CheckCircle,
+  X,
+  AlertCircle
+} from 'lucide-react'
+
+interface Stats {
+  totalUsers: number
+  totalLabs: number
+  totalBookings: number
+  activeBookings: number
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN'
+  createdAt: string
+}
+
+interface Lab {
+  id: string
+  name: string
+  location: string
+  capacity: number
+  _count: {
+    computers: number
+  }
+}
+
+interface Booking {
+  id: string
+  startTime: string
+  endTime: string
+  purpose: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED'
+  user: {
+    name: string
+    email: string
+  }
+  lab: {
+    name: string
+  }
+  computer: {
+    name: string
+  } | null
+}
+
+export default function AdminPage() {
+  const { user, token } = useAuth()
+  const [activeTab, setActiveTab] = useState('overview')
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [labs, setLabs] = useState<Lab[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch stats, users, labs, and bookings in parallel
+      const [statsRes, usersRes, labsRes, bookingsRes] = await Promise.all([
+        fetch('/api/admin/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch('/api/admin/users', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch('/api/labs', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch('/api/admin/bookings', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ])
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setStats(statsData)
+      }
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json()
+        setUsers(usersData)
+      }
+
+      if (labsRes.ok) {
+        const labsData = await labsRes.json()
+        setLabs(labsData)
+      }
+
+      if (bookingsRes.ok) {
+        const bookingsData = await bookingsRes.json()
+        setBookings(bookingsData)
+      }
+    } catch (fetchError) {
+      console.error('Failed to fetch admin data:', fetchError)
+      setError('Failed to load admin data')
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (user?.role !== 'ADMIN' && user?.role !== 'TEACHER') {
+      return
+    }
+    
+    fetchData()
+  }, [user, token, fetchData])
+
+  const handleBookingAction = async (bookingId: string, action: 'approve' | 'reject') => {
+    try {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          status: action === 'approve' ? 'APPROVED' : 'REJECTED' 
+        }),
+      })
+
+      if (response.ok) {
+        setSuccess(`Booking ${action}d successfully`)
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || `Failed to ${action} booking`)
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (updateError) {
+      console.error(`Failed to ${action} booking:`, updateError)
+      setError(`Failed to ${action} booking`)
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800'
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800'
+      case 'COMPLETED':
+        return 'bg-blue-100 text-blue-800'
+      case 'CANCELLED':
+        return 'bg-gray-100 text-gray-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'TEACHER')) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+            <p className="text-gray-600">You don&apos;t have permission to access this page.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="mt-2 text-gray-600">
+              Manage users, labs, and bookings
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+                <div className="ml-3">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="flex">
+                <CheckCircle className="h-5 w-5 text-green-400" />
+                <div className="ml-3">
+                  <p className="text-sm text-green-800">{success}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                { id: 'overview', label: 'Overview', icon: BarChart3 },
+                { id: 'bookings', label: 'Bookings', icon: Calendar },
+                { id: 'users', label: 'Users', icon: Users },
+                { id: 'labs', label: 'Labs', icon: Computer },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {stats && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <Users className="h-8 w-8 text-blue-500" />
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Users</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <Computer className="h-8 w-8 text-green-500" />
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Labs</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.totalLabs}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <Calendar className="h-8 w-8 text-purple-500" />
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex items-center">
+                      <Clock className="h-8 w-8 text-orange-500" />
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">Active Bookings</p>
+                        <p className="text-2xl font-bold text-gray-900">{stats.activeBookings}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bookings Tab */}
+          {activeTab === 'bookings' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Recent Bookings</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {booking.user.name}
+                          </h4>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{booking.user.email}</p>
+                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {booking.lab.name}
+                          </div>
+                          {booking.computer && (
+                            <div className="flex items-center">
+                              <Computer className="h-4 w-4 mr-1" />
+                              {booking.computer.name}
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {formatDateTime(booking.startTime)} - {formatDateTime(booking.endTime)}
+                          </div>
+                        </div>
+                        {booking.purpose && (
+                          <p className="mt-1 text-sm text-gray-600">
+                            <strong>Purpose:</strong> {booking.purpose}
+                          </p>
+                        )}
+                      </div>
+                      {booking.status === 'PENDING' && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleBookingAction(booking.id, 'approve')}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleBookingAction(booking.id, 'reject')}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Users Tab */}
+          {activeTab === 'users' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">System Users</h3>
+                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add User
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        User
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Joined
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                            user.role === 'TEACHER' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDateTime(user.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-blue-600 hover:text-blue-900 mr-3">
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button className="text-red-600 hover:text-red-900">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Labs Tab */}
+          {activeTab === 'labs' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Computer Labs</h3>
+                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Lab
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                {labs.map((lab) => (
+                  <div key={lab.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-lg font-medium text-gray-900">{lab.name}</h4>
+                      <div className="flex space-x-1">
+                        <button className="text-blue-600 hover:text-blue-900">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-900">
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button className="text-red-600 hover:text-red-900">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      {lab.location}
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>Capacity: {lab.capacity}</span>
+                      <span>Computers: {lab._count.computers}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
