@@ -32,7 +32,7 @@ export default function SeatSelectionBooking({
   onBookingComplete, 
   onCancel 
 }: SeatSelectionBookingProps) {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [occupancy, setOccupancy] = useState<LabOccupancy | null>(null)
   const [selectedComputer, setSelectedComputer] = useState<ComputerWithBookingStatus | null>(null)
   const [formData, setFormData] = useState({
@@ -45,17 +45,28 @@ export default function SeatSelectionBooking({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    setError(null)
+  }, [])
+
   useEffect(() => {
     const fetchOccupancy = async () => {
       try {
         const response = await fetch(`/api/seat-occupancy?labId=${labId}`)
         if (!response.ok) {
-          throw new Error('Failed to fetch occupancy data')
+          if (response.status === 401) {
+            throw new Error('Please log in to view seat availability')
+          }
+          const errorText = await response.text()
+          console.error('Seat occupancy API error:', response.status, errorText)
+          throw new Error(errorText || 'Failed to fetch occupancy data')
         }
         const data = await response.json()
         setOccupancy(data)
         setError(null)
       } catch (err) {
+        console.error('Fetch occupancy error:', err)
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
@@ -122,22 +133,43 @@ export default function SeatSelectionBooking({
     setError(null)
 
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      // Convert datetime-local format to ISO string
+      const startTimeISO = new Date(formData.startTime).toISOString()
+      const endTimeISO = new Date(formData.endTime).toISOString()
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           labId: labId,
           computerId: selectedComputer.id,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
+          startTime: startTimeISO,
+          endTime: endTimeISO,
           purpose: formData.purpose
         }),
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please log in to create a booking')
+        }
         const errorData = await response.json()
+        console.error('Booking API error:', errorData)
+        
+        // Handle validation errors
+        if (Array.isArray(errorData) && errorData.length > 0) {
+          const errorMessages = errorData.map(err => err.message).join(', ')
+          throw new Error(`Validation error: ${errorMessages}`)
+        }
+        
         throw new Error(errorData.error || 'Failed to create booking')
       }
 
@@ -342,9 +374,9 @@ export default function SeatSelectionBooking({
               <div className="flex flex-wrap gap-4 text-xs">
                 {[
                   { status: 'available', label: 'Available for booking', icon: '🟢' },
-                  { status: 'unavailable', label: 'Unavailable/occupied', icon: '🔴' },
+                  { status: 'occupied', label: 'Currently occupied', icon: '🔴' },
                   { status: 'selected', label: 'Selected', icon: '✅' },
-                  { status: 'reserved', label: 'Reserved (next 4 hours)', icon: '🟡' },
+                  { status: 'reserved', label: 'Reserved', icon: '🟡' },
                   { status: 'maintenance', label: 'Under maintenance', icon: '🔧' }
                 ].map(({ status, label, icon }) => (
                   <div key={status} className="flex items-center space-x-1">
@@ -381,14 +413,22 @@ function SeatSelectionIcon({ computer, isSelectable, isSelected, onSelect }: Sea
     if (computer.occupancyStatus === 'MAINTENANCE') {
       return 'bg-orange-100 border-orange-500 cursor-not-allowed'
     }
-    return 'bg-red-100 border-red-500 cursor-not-allowed'
+    if (computer.occupancyStatus === 'RESERVED') {
+      return 'bg-yellow-100 border-yellow-500 cursor-not-allowed'
+    }
+    if (computer.occupancyStatus === 'OCCUPIED') {
+      return 'bg-red-100 border-red-500 cursor-not-allowed'
+    }
+    return 'bg-gray-100 border-gray-500 cursor-not-allowed'
   }
 
   const getIconColor = () => {
     if (isSelected) return 'text-blue-600'
     if (isSelectable) return 'text-green-600'
     if (computer.occupancyStatus === 'MAINTENANCE') return 'text-orange-600'
-    return 'text-red-600'
+    if (computer.occupancyStatus === 'RESERVED') return 'text-yellow-600'
+    if (computer.occupancyStatus === 'OCCUPIED') return 'text-red-600'
+    return 'text-gray-600'
   }
 
   return (
@@ -410,10 +450,14 @@ function SeatSelectionIcon({ computer, isSelectable, isSelected, onSelect }: Sea
           <CheckCircle className={`h-6 w-6 ${getIconColor()}`} />
         ) : computer.occupancyStatus === 'MAINTENANCE' ? (
           <Wrench className={`h-6 w-6 ${getIconColor()}`} />
+        ) : computer.occupancyStatus === 'RESERVED' ? (
+          <Clock className={`h-6 w-6 ${getIconColor()}`} />
+        ) : computer.occupancyStatus === 'OCCUPIED' ? (
+          <User className={`h-6 w-6 ${getIconColor()}`} />
         ) : isSelectable ? (
           <Monitor className={`h-6 w-6 ${getIconColor()}`} />
         ) : (
-          <User className={`h-6 w-6 ${getIconColor()}`} />
+          <Monitor className={`h-6 w-6 ${getIconColor()}`} />
         )}
       </div>
 
@@ -429,6 +473,10 @@ function SeatSelectionIcon({ computer, isSelectable, isSelected, onSelect }: Sea
                 ? 'Available for booking' 
                 : computer.occupancyStatus === 'MAINTENANCE'
                 ? 'Under maintenance'
+                : computer.occupancyStatus === 'RESERVED'
+                ? 'Reserved'
+                : computer.occupancyStatus === 'OCCUPIED'
+                ? 'Currently occupied'
                 : 'Unavailable'
               }
             </div>

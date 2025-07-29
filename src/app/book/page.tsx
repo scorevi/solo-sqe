@@ -107,26 +107,8 @@ function BookPageContent() {
   }, [])
 
   const handleLabSelect = async (labId: string) => {
-    const lab = labs.find(l => l.id === labId)
-    if (lab) {
-      setSelectedLab(lab)
-      setSelectedComputer('')
-      
-      // Fetch detailed lab info with computers
-      try {
-        const response = await fetch(`/api/labs/${labId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        if (response.ok) {
-          const detailedLab = await response.json()
-          setSelectedLab(detailedLab)
-        }
-      } catch (error) {
-        console.error('Failed to fetch lab details:', error)
-      }
-    }
+    // Navigate directly to the lab's seat selection interface
+    router.push(`/labs/${labId}?view=book-seat`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

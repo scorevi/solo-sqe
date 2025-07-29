@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
+import { useSearchParams } from 'next/navigation'
 import { Navigation } from '@/components/Navigation'
 import SeatMap from '@/components/SeatMap'
 import SeatSelectionBooking from '@/components/SeatSelectionBooking'
@@ -64,6 +65,7 @@ interface LabDetailsProps {
 
 export default function LabDetailsPage({ params }: LabDetailsProps) {
   const { user, token } = useAuth()
+  const searchParams = useSearchParams()
   const [lab, setLab] = useState<Lab | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,9 +76,15 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
     const getParams = async () => {
       const resolvedParams = await params
       setLabId(resolvedParams.id)
+      
+      // Check URL parameter for initial view
+      const viewParam = searchParams.get('view')
+      if (viewParam === 'book-seat') {
+        setCurrentView('book-seat')
+      }
     }
     getParams()
-  }, [params])
+  }, [params, searchParams])
 
   useEffect(() => {
     const fetchLabDetails = async () => {
@@ -453,7 +461,7 @@ export default function LabDetailsPage({ params }: LabDetailsProps) {
               labId={labId} 
               labName={lab.name}
               onBookingComplete={() => {
-                setCurrentView('overview')
+                setCurrentView('seat-map')
                 // Optionally refresh lab data
                 window.location.reload()
               }}
