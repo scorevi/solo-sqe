@@ -712,7 +712,7 @@ export default function AdminPage() {
                       type="text"
                       value={newLab.name}
                       onChange={(e) => setNewLab({ ...newLab, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter lab name"
                       required
                     />
@@ -726,7 +726,7 @@ export default function AdminPage() {
                       type="text"
                       value={newLab.location}
                       onChange={(e) => setNewLab({ ...newLab, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter location"
                       required
                     />
@@ -740,7 +740,7 @@ export default function AdminPage() {
                       type="number"
                       value={newLab.capacity}
                       onChange={(e) => setNewLab({ ...newLab, capacity: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter capacity"
                       min="1"
                       required
@@ -754,7 +754,7 @@ export default function AdminPage() {
                     <textarea
                       value={newLab.description}
                       onChange={(e) => setNewLab({ ...newLab, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter description (optional)"
                       rows={3}
                     />
@@ -810,7 +810,7 @@ export default function AdminPage() {
                       type="text"
                       value={editLab.name}
                       onChange={(e) => setEditLab({ ...editLab, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter lab name"
                       required
                     />
@@ -824,7 +824,7 @@ export default function AdminPage() {
                       type="text"
                       value={editLab.location}
                       onChange={(e) => setEditLab({ ...editLab, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter location"
                       required
                     />
@@ -838,7 +838,7 @@ export default function AdminPage() {
                       type="number"
                       value={editLab.capacity}
                       onChange={(e) => setEditLab({ ...editLab, capacity: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter capacity"
                       min="1"
                       required
@@ -852,7 +852,7 @@ export default function AdminPage() {
                     <textarea
                       value={editLab.description}
                       onChange={(e) => setEditLab({ ...editLab, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter description (optional)"
                       rows={3}
                     />
@@ -908,7 +908,7 @@ export default function AdminPage() {
                       type="text"
                       value={newUser.name}
                       onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter full name"
                       required
                     />
@@ -922,7 +922,7 @@ export default function AdminPage() {
                       type="email"
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter email address"
                       required
                     />
@@ -936,7 +936,7 @@ export default function AdminPage() {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       placeholder="Enter password"
                       minLength={6}
                       required
