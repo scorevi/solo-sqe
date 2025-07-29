@@ -326,7 +326,7 @@ export default function BookPage() {
                     id="startTime"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
                     required
                   />
                 </div>
@@ -340,7 +340,7 @@ export default function BookPage() {
                     id="endTime"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white font-medium"
                     required
                   />
                 </div>
@@ -356,7 +356,7 @@ export default function BookPage() {
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
                 placeholder="Describe the purpose of your lab booking (e.g., Programming Assignment, Research Project, Class Activity)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500 font-medium"
                 rows={3}
               />
             </div>
