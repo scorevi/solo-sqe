@@ -73,6 +73,7 @@ export default function AdminPage() {
   const [success, setSuccess] = useState('')
   const [showAddLabModal, setShowAddLabModal] = useState(false)
   const [showEditLabModal, setShowEditLabModal] = useState(false)
+  const [showAddUserModal, setShowAddUserModal] = useState(false)
   const [editingLab, setEditingLab] = useState<Lab | null>(null)
   const [newLab, setNewLab] = useState({
     name: '',
@@ -85,6 +86,12 @@ export default function AdminPage() {
     location: '',
     capacity: '',
     description: ''
+  })
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'STUDENT'
   })
 
   const fetchData = useCallback(async () => {
@@ -293,6 +300,48 @@ export default function AdminPage() {
     } catch (createError) {
       console.error('Failed to create lab:', createError)
       setError('Failed to create lab')
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!newUser.name || !newUser.email || !newUser.password || !newUser.role) {
+      setError('Please fill in all required fields')
+      setTimeout(() => setError(''), 5000)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          password: newUser.password,
+          role: newUser.role,
+        }),
+      })
+
+      if (response.ok) {
+        setSuccess('User created successfully')
+        setShowAddUserModal(false)
+        setNewUser({ name: '', email: '', password: '', role: 'STUDENT' })
+        fetchData() // Refresh data
+        setTimeout(() => setSuccess(''), 5000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to create user')
+        setTimeout(() => setError(''), 5000)
+      }
+    } catch (createError) {
+      console.error('Failed to create user:', createError)
+      setError('Failed to create user')
       setTimeout(() => setError(''), 5000)
     }
   }
@@ -517,7 +566,10 @@ export default function AdminPage() {
             <div className="bg-white shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">System Users</h3>
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={() => setShowAddUserModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add User
                 </button>
@@ -823,6 +875,104 @@ export default function AdminPage() {
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
                     Update Lab
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Add New User</h3>
+                <button
+                  onClick={() => setShowAddUserModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddUser}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter full name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter password"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role *
+                    </label>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                      required
+                    >
+                      <option value="STUDENT">Student</option>
+                      <option value="TEACHER">Teacher</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddUserModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Create User
                   </button>
                 </div>
               </form>
